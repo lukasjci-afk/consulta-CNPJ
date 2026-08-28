@@ -9,13 +9,12 @@
      Troque "consulta-cnpj" pelo nome REAL do seu repositório nas 3 URLs abaixo. -->
 <meta property="og:type" content="website">
 <meta property="og:title" content="Consulta Simples Nacional — Transportes ARI">
-<meta property="og:description" content="Verificação de enquadramento por CNPJ — em lote ou consulta avulsa.">
+<meta property="og:description" content="Verificação de regime tributário por CNPJ — em lote ou consulta avulsa.">
 <meta property="og:image" content="https://lukasjci-afk.github.io/consulta-cnpj/capa.png">
 <meta property="og:url" content="https://lukasjci-afk.github.io/consulta-cnpj/">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="theme-color" content="#16294A">
 
-<!-- SheetJS: lê .xls/.xlsx e gera o .xlsx de saída, tudo no navegador -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -36,7 +35,6 @@
   body{font-family:var(--body);color:var(--ink);background:var(--paper);line-height:1.5;-webkit-font-smoothing:antialiased}
   .wrap{max-width:860px;margin:0 auto;padding:0 20px 64px}
 
-  /* ---- Cabeçalho ---- */
   .topbar{background:var(--steel-deep);color:#fff;border-bottom:3px solid var(--amber)}
   .topbar .wrap{padding-top:20px;padding-bottom:20px;display:flex;align-items:center;gap:16px}
   .mark{font-family:var(--disp);font-weight:700;letter-spacing:.5px;font-size:13px;color:var(--amber);
@@ -44,23 +42,19 @@
   .topbar h1{font-family:var(--disp);font-weight:600;font-size:18px;margin:0;line-height:1.25}
   .topbar h1 small{display:block;font-family:var(--body);font-weight:400;font-size:12.5px;color:#AEBACB;letter-spacing:.2px}
 
-  /* ---- Card ---- */
   .card{background:var(--surface);border:1px solid var(--line);border-radius:12px;margin-top:28px;overflow:hidden}
 
-  /* ---- Abas ---- */
   .tabs{display:flex;border-bottom:1px solid var(--line);background:#F7F9FB}
   .tab{flex:1;font-family:var(--disp);font-weight:600;font-size:14px;color:var(--muted);
     background:none;border:0;padding:15px 10px;cursor:pointer;border-bottom:3px solid transparent;transition:.15s}
   .tab:hover{color:var(--steel)}
   .tab.is-active{color:var(--steel-deep);border-bottom-color:var(--amber);background:var(--surface)}
-
   .pane{display:none} .pane.is-active{display:block}
 
   .card__head{padding:22px 22px 4px}
   .card__head h2{font-family:var(--disp);font-weight:600;font-size:16px;margin:0 0 4px}
   .card__head p{margin:0;color:var(--muted);font-size:13.5px}
 
-  /* ---- Busca avulsa ---- */
   .search{display:flex;gap:10px;padding:18px 22px 6px;flex-wrap:wrap}
   .search input{flex:1;min-width:200px;font-family:var(--mono);font-size:16px;letter-spacing:.5px;
     padding:13px 15px;border:1.5px solid var(--line);border-radius:9px;color:var(--ink);outline:none}
@@ -74,7 +68,6 @@
   .btn:disabled{opacity:.5;cursor:not-allowed;filter:none}
   .search-hint{padding:2px 22px 14px;color:var(--muted);font-size:12px}
 
-  /* ---- Resultado avulso ---- */
   .result{display:none;padding:4px 22px 24px}
   .result.on{display:block}
   .rcard{border:1px solid var(--line);border-radius:11px;overflow:hidden}
@@ -86,8 +79,10 @@
   .status--sim{background:#12874A18;color:#0E6B3B} .status--sim .dot{background:var(--green)}
   .status--mei{background:#2E88F018;color:#1E63B8} .status--mei .dot{background:#2E88F0}
   .status--nao{background:#8595A81f;color:#4A5765} .status--nao .dot{background:#8595A8}
+  .status--lucro{background:#2E4B6B18;color:#22405F} .status--lucro .dot{background:var(--steel)}
   .status--err{background:#C4362f18;color:#A02B25} .status--err .dot{background:var(--red)}
   .status .dot{width:8px;height:8px;border-radius:50%}
+  .rcard__detalhe{font-size:12px;color:var(--muted);margin-top:8px;line-height:1.45}
   .grid{display:grid;grid-template-columns:1fr 1fr;gap:0}
   .cell{padding:12px 18px;border-bottom:1px solid var(--line)}
   .cell:nth-child(odd){border-right:1px solid var(--line)}
@@ -98,7 +93,6 @@
   .spinner{display:inline-block;width:15px;height:15px;border:2.5px solid #ffffff80;border-top-color:#fff;border-radius:50%;animation:spin .7s linear infinite}
   @keyframes spin{to{transform:rotate(360deg)}}
 
-  /* ---- Upload (lote) ---- */
   .drop{margin:18px 22px 22px;border:2px dashed var(--line);border-radius:10px;padding:34px 20px;text-align:center;
     cursor:pointer;transition:border-color .15s,background .15s;background:#FBFCFD}
   .drop:hover,.drop.is-over{border-color:var(--steel);background:#F4F8FD}
@@ -131,6 +125,7 @@
   .pill--sim{background:#12874A22;color:#4CD08A}
   .pill--nao{background:#8595A81f;color:#AEBACB}
   .pill--mei{background:#2E88F022;color:#7FB8FF}
+  .pill--lucro{background:#7FB2E822;color:#BAD4F0}
   .pill--err{background:#C4362f22;color:#FF8A82}
   .log__row.cache .log__cnpj{color:#9FB0C2}
 
@@ -156,7 +151,7 @@
   <div class="wrap">
     <span class="mark">ARI</span>
     <h1>Consulta Simples Nacional
-      <small>Transportes ARI · verificação de enquadramento por CNPJ</small>
+      <small>Transportes ARI · regime tributário por CNPJ</small>
     </h1>
   </div>
 </header>
@@ -168,27 +163,25 @@
       <button class="tab" data-tab="lote">Planilha em lote</button>
     </div>
 
-    <!-- ============ ABA: CNPJ AVULSO ============ -->
     <div class="pane pane--avulso is-active" id="pane-avulso">
       <div class="card__head">
         <h2>Consulta avulsa</h2>
-        <p>Digite um CNPJ e veja na hora os dados da empresa e o enquadramento no Simples Nacional.</p>
+        <p>Digite um CNPJ e veja na hora o <b>regime tributário</b> da empresa e os demais dados cadastrais.</p>
       </div>
       <div class="search">
         <input id="cnpjInput" inputmode="numeric" autocomplete="off"
                placeholder="00.000.000/0000-00" maxlength="18">
         <button class="btn btn--go" id="cnpjBtn">🔎 Consultar</button>
       </div>
-      <div class="search-hint">Pode colar com pontuação ou só os números.</div>
+      <div class="search-hint">Pode colar com pontuação ou apenas os números.</div>
       <div class="alert alert--err" id="alertA"></div>
       <div class="result" id="result"></div>
     </div>
 
-    <!-- ============ ABA: PLANILHA EM LOTE ============ -->
     <div class="pane pane--lote" id="pane-lote">
       <div class="card__head">
         <h2>Planilha de entrada</h2>
-        <p>Envie um arquivo <b>.xls</b> ou <b>.xlsx</b> com uma coluna chamada <b>CNPJ</b>. O resultado sai numa planilha idêntica com a coluna <b>Status Simples Nacional</b> acrescentada.</p>
+        <p>Envie um arquivo <b>.xls</b> ou <b>.xlsx</b> com uma coluna chamada <b>CNPJ</b>. O resultado sai numa planilha idêntica com as colunas <b>Status Simples Nacional</b> e <b>Regime Tributário</b> acrescentadas.</p>
       </div>
 
       <label class="drop" id="drop">
@@ -218,7 +211,7 @@
 
   <p class="foot">
     Roda inteiramente no seu navegador — nenhum dado sai para servidor da ARI.<br>
-    Fontes consultadas, em ordem: <code>BrasilAPI</code> → <code>MinhaReceita</code> → <code>ReceitaWS</code>.
+    Fontes: <code>BrasilAPI</code> → <code>MinhaReceita</code> → <code>ReceitaWS</code>. Regime tributário (Lucro Real/Presumido) conforme último ano-base declarado à Receita.
   </p>
 </main>
 
@@ -226,7 +219,6 @@
 (function(){
   "use strict";
 
-  /* ---------- utilidades ---------- */
   function onlyDigits(v){ return String(v==null?'':v).replace(/\D/g,''); }
   function sleep(ms){ return new Promise(function(r){ setTimeout(r,ms); }); }
   function fmtCNPJ(d){
@@ -237,91 +229,75 @@
     return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]; }); }
   function fmtDate(s){
     if(!s) return s;
-    var m = String(s).match(/^(\d{4})-(\d{2})-(\d{2})/); // ISO -> BR
+    var m = String(s).match(/^(\d{4})-(\d{2})-(\d{2})/);
     return m ? (m[3]+'/'+m[2]+'/'+m[1]) : s;
   }
-
-  /* determina o status do Simples a partir de campos possíveis */
-  function statusSimples(simples, mei){
-    if(simples === true)  return mei ? 'Optante pelo Simples Nacional (MEI)' : 'Optante pelo Simples Nacional';
-    if(simples === false) return 'Não Optante pelo Simples Nacional';
-    return null; // desconhecido
-  }
-  function statusKind(txt){
-    if(!txt) return 'nao';
-    if(txt.indexOf('(MEI)')!==-1) return 'mei';
-    if(txt.indexOf('Não Optante')===0) return 'nao';
-    if(txt.indexOf('Optante')===0) return 'sim';
-    if(txt==='CNPJ Inválido') return 'err';
-    return 'nao';
+  function titleCase(s){
+    return String(s||'').toLowerCase()
+      .replace(/(^|[\s\/])([a-zà-ú])/g,function(_,p,c){ return p+c.toUpperCase(); })
+      .replace(/\bDo\b/g,'do').replace(/\bDe\b/g,'de').replace(/\bDa\b/g,'da')
+      .replace(/Irpj/gi,'IRPJ');
   }
 
-  /* ==================================================================
-     CONSULTA AVULSA — retorna dados completos da empresa
-     ================================================================== */
+  /* ---------- regime tributário ---------- */
+  function ultimoRegime(arr){
+    if(!Array.isArray(arr) || !arr.length) return null;
+    var s = arr.filter(function(x){ return x && x.forma_de_tributacao; })
+               .sort(function(a,b){ return (Number(b.ano)||0)-(Number(a.ano)||0); });
+    return s.length ? {forma:s[0].forma_de_tributacao, ano:s[0].ano} : null;
+  }
+  function resolverRegime(simples, mei, regimeArr){
+    if(simples === true)
+      return mei ? {label:'Simples Nacional (MEI)', kind:'mei'}
+                 : {label:'Simples Nacional', kind:'sim'};
+    var ult = ultimoRegime(regimeArr);
+    if(ult){
+      return {label:titleCase(ult.forma), kind:'lucro',
+              detalhe:'último ano-base declarado à Receita: '+(ult.ano||'—')};
+    }
+    if(simples === false)
+      return {label:'Não optante pelo Simples Nacional', kind:'nao',
+              detalhe:'A Receita não informa o regime (Lucro Presumido/Real) para este CNPJ.'};
+    return {label:'Regime não informado', kind:'nao'};
+  }
+  function simplesLabel(simples, mei){
+    if(simples===true) return mei ? 'Optante (MEI)' : 'Optante';
+    if(simples===false) return 'Não optante';
+    return '—';
+  }
+
+  function normBrasil(d){
+    var mei = (d.opcao_pelo_simei != null) ? d.opcao_pelo_simei : d.opcao_pelo_mei;
+    return { razao:d.razao_social, fantasia:d.nome_fantasia,
+      situacao:d.descricao_situacao_cadastral, abertura:d.data_inicio_atividade,
+      cnae:d.cnae_fiscal_descricao, porte:d.descricao_porte||d.porte,
+      natureza:d.natureza_juridica, municipio:d.municipio, uf:d.uf,
+      simples:d.opcao_pelo_simples, mei:mei, regimeArr:d.regime_tributario };
+  }
+  function normReceitaWS(d){
+    var opt = d.simples && d.simples.optante;
+    var optMei = d.simei && d.simei.optante;
+    return { razao:d.nome, fantasia:d.fantasia, situacao:d.situacao, abertura:d.abertura,
+      cnae:(d.atividade_principal && d.atividade_principal[0]) ? d.atividade_principal[0].text : null,
+      porte:d.porte, natureza:d.natureza_juridica, municipio:d.municipio, uf:d.uf,
+      simples:(opt===true?true:opt===false?false:null), mei:optMei, regimeArr:null };
+  }
+
   async function consultarInfo(cnpjLimpo){
-    // 1) BrasilAPI (dados mais completos)
     try{
       var r = await fetch('https://brasilapi.com.br/api/cnpj/v1/'+cnpjLimpo);
-      if(r.ok){
-        var d = await r.json();
-        var mei = (d.opcao_pelo_simei != null) ? d.opcao_pelo_simei : d.opcao_pelo_mei;
-        return {ok:true, fonte:'BrasilAPI', data:{
-          razao: d.razao_social,
-          fantasia: d.nome_fantasia,
-          situacao: d.descricao_situacao_cadastral,
-          abertura: d.data_inicio_atividade,
-          cnae: d.cnae_fiscal_descricao,
-          porte: d.descricao_porte || d.porte,
-          natureza: d.natureza_juridica,
-          municipio: d.municipio, uf: d.uf,
-          status: statusSimples(d.opcao_pelo_simples, mei)
-        }};
-      }
+      if(r.ok) return {ok:true, fonte:'BrasilAPI', data:normBrasil(await r.json())};
       if(r.status===404) return {ok:false, motivo:'CNPJ não encontrado na base da Receita.'};
     }catch(e){}
-
-    // 2) MinhaReceita
     try{
       var r2 = await fetch('https://minhareceita.org/'+cnpjLimpo);
-      if(r2.ok){
-        var d2 = await r2.json();
-        var mei2 = (d2.opcao_pelo_simei != null) ? d2.opcao_pelo_simei : d2.opcao_pelo_mei;
-        return {ok:true, fonte:'MinhaReceita', data:{
-          razao: d2.razao_social,
-          fantasia: d2.nome_fantasia,
-          situacao: d2.descricao_situacao_cadastral,
-          abertura: d2.data_inicio_atividade,
-          cnae: d2.cnae_fiscal_descricao,
-          porte: d2.descricao_porte || d2.porte,
-          natureza: d2.natureza_juridica,
-          municipio: d2.municipio, uf: d2.uf,
-          status: statusSimples(d2.opcao_pelo_simples, mei2)
-        }};
-      }
+      if(r2.ok) return {ok:true, fonte:'MinhaReceita', data:normBrasil(await r2.json())};
     }catch(e){}
-
-    // 3) ReceitaWS (estrutura diferente; limite de 3/min)
     try{
       var r3 = await fetch('https://receitaws.com.br/v1/cnpj/'+cnpjLimpo);
-      if(r3.ok){
-        var d3 = await r3.json();
-        if(d3.status !== 'ERROR'){
-          var opt = d3.simples && d3.simples.optante;
-          var optMei = d3.simei && d3.simei.optante;
-          var st = (opt===true)?(optMei?'Optante pelo Simples Nacional (MEI)':'Optante pelo Simples Nacional')
-                 :(opt===false)?'Não Optante pelo Simples Nacional':null;
-          return {ok:true, fonte:'ReceitaWS', data:{
-            razao: d3.nome, fantasia: d3.fantasia, situacao: d3.situacao,
-            abertura: d3.abertura,
-            cnae: (d3.atividade_principal && d3.atividade_principal[0]) ? d3.atividade_principal[0].text : null,
-            porte: d3.porte, natureza: d3.natureza_juridica,
-            municipio: d3.municipio, uf: d3.uf, status: st
-          }};
-        }
-      }
+      if(r3.ok){ var d3=await r3.json();
+        if(d3.status!=='ERROR') return {ok:true, fonte:'ReceitaWS', data:normReceitaWS(d3)}; }
     }catch(e){}
-
     return {ok:false, motivo:'Não consegui consultar agora. Tente novamente em instantes.'};
   }
 
@@ -336,8 +312,7 @@
       return;
     }
     var d = res.data;
-    var stTxt = d.status || 'Situação do Simples não informada';
-    var kind = d.status ? statusKind(d.status) : 'nao';
+    var reg = resolverRegime(d.simples, d.mei, d.regimeArr);
     function cell(k,v,full){
       return '<div class="cell'+(full?' cell--full':'')+'"><div class="cell__k">'+k+'</div>'
            + '<div class="cell__v">'+esc(v||'—')+'</div></div>';
@@ -349,9 +324,12 @@
       + '<div class="rcard__top">'
       +   '<div class="rcard__razao">'+esc(d.razao||'—')+'</div>'
       +   '<div class="rcard__cnpj">'+esc(fmtCNPJ(cnpjLimpo))+(d.fantasia?' · '+esc(d.fantasia):'')+'</div>'
-      +   '<div class="status status--'+kind+'"><span class="dot"></span>'+esc(stTxt)+'</div>'
+      +   '<div class="status status--'+reg.kind+'"><span class="dot"></span>'+esc(reg.label)+'</div>'
+      +   (reg.detalhe ? '<div class="rcard__detalhe">'+esc(reg.detalhe)+'</div>' : '')
       + '</div>'
       + '<div class="grid">'
+      +   cell('Regime tributário', reg.label)
+      +   cell('Optante pelo Simples', simplesLabel(d.simples, d.mei))
       +   cell('Situação cadastral', d.situacao)
       +   cell('Abertura', fmtDate(d.abertura))
       +   cell('Porte', d.porte)
@@ -364,49 +342,35 @@
   }
 
   async function buscarAvulso(){
-    var input = document.getElementById('cnpjInput');
-    var btn = document.getElementById('cnpjBtn');
-    var alertA = document.getElementById('alertA');
-    var box = document.getElementById('result');
+    var input=document.getElementById('cnpjInput'), btn=document.getElementById('cnpjBtn'),
+        alertA=document.getElementById('alertA'), box=document.getElementById('result');
     var limpo = onlyDigits(input.value);
-
     alertA.classList.remove('on');
     if(limpo.length !== 14){
-      alertA.textContent = 'Digite um CNPJ com 14 dígitos.';
-      alertA.classList.add('on');
-      box.classList.remove('on');
-      return;
+      alertA.textContent='Digite um CNPJ com 14 dígitos.'; alertA.classList.add('on');
+      box.classList.remove('on'); return;
     }
-
-    btn.disabled = true;
-    var original = btn.innerHTML;
-    btn.innerHTML = '<span class="spinner"></span> Consultando';
-    box.classList.remove('on');
-
+    btn.disabled=true; var original=btn.innerHTML;
+    btn.innerHTML='<span class="spinner"></span> Consultando'; box.classList.remove('on');
     var res = await consultarInfo(limpo);
     renderResultado(limpo, res);
-
-    btn.disabled = false;
-    btn.innerHTML = original;
+    btn.disabled=false; btn.innerHTML=original;
   }
 
-  /* máscara leve enquanto digita */
   document.getElementById('cnpjInput').addEventListener('input', function(e){
-    var d = onlyDigits(e.target.value).slice(0,14);
-    var out = d;
-    if(d.length>2)  out = d.slice(0,2)+'.'+d.slice(2);
-    if(d.length>5)  out = out.slice(0,6)+'.'+d.slice(5);
-    if(d.length>8)  out = out.slice(0,10)+'/'+d.slice(8);
-    if(d.length>12) out = out.slice(0,15)+'-'+d.slice(12);
-    e.target.value = out;
+    var d=onlyDigits(e.target.value).slice(0,14), out=d;
+    if(d.length>2)  out=d.slice(0,2)+'.'+d.slice(2);
+    if(d.length>5)  out=out.slice(0,6)+'.'+d.slice(5);
+    if(d.length>8)  out=out.slice(0,10)+'/'+d.slice(8);
+    if(d.length>12) out=out.slice(0,15)+'-'+d.slice(12);
+    e.target.value=out;
   });
   document.getElementById('cnpjInput').addEventListener('keydown', function(e){
     if(e.key==='Enter'){ e.preventDefault(); buscarAvulso(); }
   });
   document.getElementById('cnpjBtn').addEventListener('click', buscarAvulso);
 
-  /* ---------- abas ---------- */
-  var tabs = document.querySelectorAll('.tab');
+  var tabs=document.querySelectorAll('.tab');
   tabs.forEach(function(t){
     t.addEventListener('click', function(){
       tabs.forEach(function(x){ x.classList.remove('is-active'); });
@@ -416,9 +380,7 @@
     });
   });
 
-  /* ==================================================================
-     PLANILHA EM LOTE
-     ================================================================== */
+  /* ================= PLANILHA EM LOTE ================= */
   var fileInput=document.getElementById('file'), drop=document.getElementById('drop'),
       fileName=document.getElementById('fileName'), runBtn=document.getElementById('run'),
       dlBtn=document.getElementById('download'), hint=document.getElementById('hint'),
@@ -454,30 +416,32 @@
     reader.readAsArrayBuffer(f);
   }
 
-  /* consulta só o status (3 tentativas), igual ao script Python */
-  async function consultarStatus(cnpjLimpo){
-    if(cnpjLimpo.length!==14) return 'CNPJ Inválido';
+  async function consultarLinha(cnpjLimpo){
+    if(cnpjLimpo.length!==14) return {simples:'CNPJ Inválido', regime:'CNPJ Inválido', kind:'err'};
+    var norm=null;
     try{ var r=await fetch('https://brasilapi.com.br/api/cnpj/v1/'+cnpjLimpo);
-      if(r.ok){ var d=await r.json(); var m=(d.opcao_pelo_simei!=null)?d.opcao_pelo_simei:d.opcao_pelo_mei;
-        var s=statusSimples(d.opcao_pelo_simples,m); if(s) return s; } }catch(e){}
-    try{ var r2=await fetch('https://minhareceita.org/'+cnpjLimpo);
-      if(r2.ok){ var d2=await r2.json(); var m2=(d2.opcao_pelo_simei!=null)?d2.opcao_pelo_simei:d2.opcao_pelo_mei;
-        var s2=statusSimples(d2.opcao_pelo_simples,m2); if(s2) return s2; } }catch(e){}
-    try{ var r3=await fetch('https://receitaws.com.br/v1/cnpj/'+cnpjLimpo);
-      if(r3.ok){ var d3=await r3.json(); var opt=d3.simples&&d3.simples.optante;
-        if(opt===true) return 'Optante pelo Simples Nacional';
-        if(opt===false) return 'Não Optante pelo Simples Nacional'; } }catch(e){}
-    return 'Não Optante pelo Simples Nacional';
+      if(r.ok){ norm=normBrasil(await r.json()); } }catch(e){}
+    if(!norm){ try{ var r2=await fetch('https://minhareceita.org/'+cnpjLimpo);
+      if(r2.ok){ norm=normBrasil(await r2.json()); } }catch(e){} }
+    if(!norm){ try{ var r3=await fetch('https://receitaws.com.br/v1/cnpj/'+cnpjLimpo);
+      if(r3.ok){ var d3=await r3.json(); if(d3.status!=='ERROR'){ norm=normReceitaWS(d3); } } }catch(e){} }
+    if(!norm) return {simples:'Não Optante pelo Simples Nacional', regime:'Não informado', kind:'nao'};
+
+    var reg = resolverRegime(norm.simples, norm.mei, norm.regimeArr);
+    var simplesTxt = (norm.simples===true) ? (norm.mei?'Optante pelo Simples Nacional (MEI)':'Optante pelo Simples Nacional')
+                   : (norm.simples===false) ? 'Não Optante pelo Simples Nacional'
+                   : 'Não informado';
+    return {simples:simplesTxt, regime:reg.label, kind:reg.kind};
   }
 
-  function logLine(i,total,cnpj,status,fromCache){
+  function logLine(i,total,cnpj,txt,kind,fromCache){
     var row=document.createElement('div');
     row.className='log__row'+(fromCache?' cache':'');
-    var pc=status?('pill--'+statusKind(status)):'pill--wait';
-    var txt=status?(status+(fromCache?' · cache':'')):'consultando…';
+    var pc = txt ? ('pill--'+(kind||'nao')) : 'pill--wait';
+    var body = txt ? (txt+(fromCache?' · cache':'')) : 'consultando…';
     row.innerHTML='<span class="log__n">['+i+'/'+total+']</span>'
       +'<span class="log__cnpj">'+esc(cnpj)+'</span>'
-      +'<span class="log__pill '+pc+'">'+esc(txt)+'</span>';
+      +'<span class="log__pill '+pc+'">'+esc(body)+'</span>';
     logBox.appendChild(row); logBox.scrollTop=logBox.scrollHeight; return row;
   }
   function setProgress(done,total){
@@ -493,17 +457,20 @@
     var total=rows.length, cache={}; setProgress(0,total);
     for(var i=0;i<total;i++){
       var raw=rows[i][cnpjKey], limpo=onlyDigits(raw);
-      var display=String(raw===''?'(vazio)':raw), status, fromCache=false;
+      var display=String(raw===''?'(vazio)':raw), out, fromCache=false;
       if(Object.prototype.hasOwnProperty.call(cache,limpo)){
-        status=cache[limpo]; fromCache=true; logLine(i+1,total,display,status,true);
+        out=cache[limpo]; fromCache=true;
+        logLine(i+1,total,display,out.regime,out.kind,true);
       }else{
-        var pending=logLine(i+1,total,display,null,false);
-        status=await consultarStatus(limpo); cache[limpo]=status;
+        var pending=logLine(i+1,total,display,null,null,false);
+        out=await consultarLinha(limpo); cache[limpo]=out;
         var pill=pending.querySelector('.log__pill');
-        pill.className='log__pill pill--'+statusKind(status); pill.textContent=status;
+        pill.className='log__pill pill--'+(out.kind||'nao'); pill.textContent=out.regime;
         await sleep(1200);
       }
-      rows[i]['Status Simples Nacional']=status; setProgress(i+1,total);
+      rows[i]['Status Simples Nacional']=out.simples;
+      rows[i]['Regime Tributário']=out.regime;
+      setProgress(i+1,total);
     }
     buildOutput();
     hint.textContent='Concluído — '+total+' linha(s) processada(s).';
@@ -512,7 +479,9 @@
 
   function buildOutput(){
     var outHeaders=headers.slice();
-    if(outHeaders.indexOf('Status Simples Nacional')===-1) outHeaders.push('Status Simples Nacional');
+    ['Status Simples Nacional','Regime Tributário'].forEach(function(h){
+      if(outHeaders.indexOf(h)===-1) outHeaders.push(h);
+    });
     var ws=XLSX.utils.json_to_sheet(rows,{header:outHeaders});
     var wb=XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb,ws,'Resultado');
     var wbout=XLSX.write(wb,{bookType:'xlsx',type:'array'});
