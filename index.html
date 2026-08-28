@@ -1,0 +1,531 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Consulta Simples Nacional · Transportes ARI</title>
+
+<!-- ====== Cartão de preview do link (WhatsApp / redes) ======
+     Troque "consulta-cnpj" pelo nome REAL do seu repositório nas 3 URLs abaixo. -->
+<meta property="og:type" content="website">
+<meta property="og:title" content="Consulta Simples Nacional — Transportes ARI">
+<meta property="og:description" content="Verificação de enquadramento por CNPJ — em lote ou consulta avulsa.">
+<meta property="og:image" content="https://lukasjci-afk.github.io/consulta-cnpj/capa.png">
+<meta property="og:url" content="https://lukasjci-afk.github.io/consulta-cnpj/">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="theme-color" content="#16294A">
+
+<!-- SheetJS: lê .xls/.xlsx e gera o .xlsx de saída, tudo no navegador -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+
+<style>
+  :root{
+    --paper:#EEF1F4; --surface:#FFFFFF; --ink:#16202B;
+    --steel:#2E4B6B; --steel-deep:#1E3350; --amber:#F2A400; --amber-ink:#5A3D00;
+    --green:#12874A; --red:#C4362F; --muted:#6B7785; --line:#DCE1E7;
+    --mono:ui-monospace,"SF Mono",Menlo,Consolas,monospace;
+    --disp:"Space Grotesk",system-ui,sans-serif;
+    --body:"Inter",system-ui,-apple-system,sans-serif;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0}
+  body{font-family:var(--body);color:var(--ink);background:var(--paper);line-height:1.5;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:860px;margin:0 auto;padding:0 20px 64px}
+
+  /* ---- Cabeçalho ---- */
+  .topbar{background:var(--steel-deep);color:#fff;border-bottom:3px solid var(--amber)}
+  .topbar .wrap{padding-top:20px;padding-bottom:20px;display:flex;align-items:center;gap:16px}
+  .mark{font-family:var(--disp);font-weight:700;letter-spacing:.5px;font-size:13px;color:var(--amber);
+    border:1.5px solid var(--amber);border-radius:6px;padding:6px 10px;white-space:nowrap}
+  .topbar h1{font-family:var(--disp);font-weight:600;font-size:18px;margin:0;line-height:1.25}
+  .topbar h1 small{display:block;font-family:var(--body);font-weight:400;font-size:12.5px;color:#AEBACB;letter-spacing:.2px}
+
+  /* ---- Card ---- */
+  .card{background:var(--surface);border:1px solid var(--line);border-radius:12px;margin-top:28px;overflow:hidden}
+
+  /* ---- Abas ---- */
+  .tabs{display:flex;border-bottom:1px solid var(--line);background:#F7F9FB}
+  .tab{flex:1;font-family:var(--disp);font-weight:600;font-size:14px;color:var(--muted);
+    background:none;border:0;padding:15px 10px;cursor:pointer;border-bottom:3px solid transparent;transition:.15s}
+  .tab:hover{color:var(--steel)}
+  .tab.is-active{color:var(--steel-deep);border-bottom-color:var(--amber);background:var(--surface)}
+
+  .pane{display:none} .pane.is-active{display:block}
+
+  .card__head{padding:22px 22px 4px}
+  .card__head h2{font-family:var(--disp);font-weight:600;font-size:16px;margin:0 0 4px}
+  .card__head p{margin:0;color:var(--muted);font-size:13.5px}
+
+  /* ---- Busca avulsa ---- */
+  .search{display:flex;gap:10px;padding:18px 22px 6px;flex-wrap:wrap}
+  .search input{flex:1;min-width:200px;font-family:var(--mono);font-size:16px;letter-spacing:.5px;
+    padding:13px 15px;border:1.5px solid var(--line);border-radius:9px;color:var(--ink);outline:none}
+  .search input:focus{border-color:var(--steel)}
+  .btn{font-family:var(--disp);font-weight:600;font-size:14px;letter-spacing:.2px;border:0;border-radius:8px;
+    padding:12px 20px;cursor:pointer;display:inline-flex;align-items:center;gap:8px;text-decoration:none}
+  .btn--go{background:var(--amber);color:var(--amber-ink)}
+  .btn--go:hover{filter:brightness(1.04)}
+  .btn--dl{background:var(--green);color:#fff}
+  .btn--dl:hover{filter:brightness(1.05)}
+  .btn:disabled{opacity:.5;cursor:not-allowed;filter:none}
+  .search-hint{padding:2px 22px 14px;color:var(--muted);font-size:12px}
+
+  /* ---- Resultado avulso ---- */
+  .result{display:none;padding:4px 22px 24px}
+  .result.on{display:block}
+  .rcard{border:1px solid var(--line);border-radius:11px;overflow:hidden}
+  .rcard__top{padding:16px 18px;background:#F7F9FB;border-bottom:1px solid var(--line)}
+  .rcard__razao{font-family:var(--disp);font-weight:600;font-size:16px;line-height:1.3}
+  .rcard__cnpj{font-family:var(--mono);font-size:12.5px;color:var(--muted);margin-top:3px}
+  .status{display:inline-flex;align-items:center;gap:7px;margin-top:11px;font-weight:600;font-size:13px;
+    padding:6px 13px;border-radius:99px}
+  .status--sim{background:#12874A18;color:#0E6B3B} .status--sim .dot{background:var(--green)}
+  .status--mei{background:#2E88F018;color:#1E63B8} .status--mei .dot{background:#2E88F0}
+  .status--nao{background:#8595A81f;color:#4A5765} .status--nao .dot{background:#8595A8}
+  .status--err{background:#C4362f18;color:#A02B25} .status--err .dot{background:var(--red)}
+  .status .dot{width:8px;height:8px;border-radius:50%}
+  .grid{display:grid;grid-template-columns:1fr 1fr;gap:0}
+  .cell{padding:12px 18px;border-bottom:1px solid var(--line)}
+  .cell:nth-child(odd){border-right:1px solid var(--line)}
+  .cell__k{font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);font-weight:600}
+  .cell__v{font-size:14px;margin-top:3px;color:var(--ink);word-break:break-word}
+  .cell--full{grid-column:1 / -1;border-right:0}
+  .rfonte{font-size:11px;color:var(--muted);padding:10px 18px;font-family:var(--mono)}
+  .spinner{display:inline-block;width:15px;height:15px;border:2.5px solid #ffffff80;border-top-color:#fff;border-radius:50%;animation:spin .7s linear infinite}
+  @keyframes spin{to{transform:rotate(360deg)}}
+
+  /* ---- Upload (lote) ---- */
+  .drop{margin:18px 22px 22px;border:2px dashed var(--line);border-radius:10px;padding:34px 20px;text-align:center;
+    cursor:pointer;transition:border-color .15s,background .15s;background:#FBFCFD}
+  .drop:hover,.drop.is-over{border-color:var(--steel);background:#F4F8FD}
+  .drop.is-over{border-style:solid}
+  .drop__icon{font-family:var(--disp);font-weight:700;font-size:15px;color:var(--steel);letter-spacing:.5px}
+  .drop__main{font-weight:600;margin-top:8px;font-size:15px}
+  .drop__sub{color:var(--muted);font-size:12.5px;margin-top:4px}
+  .drop__file{margin-top:12px;font-family:var(--mono);font-size:12.5px;color:var(--steel-deep);
+    background:#EAF1F9;border-radius:6px;padding:6px 10px;display:none}
+  .drop.has-file .drop__file{display:inline-block}
+  input[type=file]{display:none}
+
+  .actions{display:flex;gap:12px;align-items:center;padding:0 22px 22px;flex-wrap:wrap}
+  .hint{color:var(--muted);font-size:12.5px}
+
+  .progress{padding:0 22px;display:none}
+  .progress.on{display:block;padding-bottom:14px}
+  .progress__bar{height:8px;background:#E7ECF1;border-radius:99px;overflow:hidden}
+  .progress__fill{height:100%;width:0;background:var(--steel);transition:width .2s ease}
+  .progress__meta{display:flex;justify-content:space-between;font-size:12px;color:var(--muted);margin-top:6px;font-family:var(--mono)}
+
+  .log{display:none;border-top:1px solid var(--line);background:var(--ink);color:#D9E1EA;
+    font-family:var(--mono);font-size:12.5px;max-height:340px;overflow:auto;padding:8px 0}
+  .log.on{display:block}
+  .log__row{display:flex;gap:10px;align-items:baseline;padding:3px 22px;white-space:nowrap}
+  .log__n{color:#5E6E80;min-width:64px}
+  .log__cnpj{color:#EAF0F6;min-width:150px}
+  .log__pill{margin-left:auto;font-size:11px;padding:2px 9px;border-radius:99px;font-family:var(--body);font-weight:600;letter-spacing:.2px}
+  .pill--wait{background:#3A342014;color:var(--amber)}
+  .pill--sim{background:#12874A22;color:#4CD08A}
+  .pill--nao{background:#8595A81f;color:#AEBACB}
+  .pill--mei{background:#2E88F022;color:#7FB8FF}
+  .pill--err{background:#C4362f22;color:#FF8A82}
+  .log__row.cache .log__cnpj{color:#9FB0C2}
+
+  .alert{display:none;margin:0 22px 22px;padding:12px 14px;border-radius:8px;font-size:13.5px}
+  .alert.on{display:block}
+  .alert--err{background:#FBE9E7;color:#8A241E;border:1px solid #F1C4BF}
+
+  .foot{color:var(--muted);font-size:12px;text-align:center;margin-top:22px;line-height:1.7}
+  .foot code{font-family:var(--mono);background:#E3E8ED;padding:1px 6px;border-radius:4px;color:var(--steel-deep)}
+
+  @media (max-width:520px){
+    .topbar .wrap{flex-wrap:wrap;gap:10px}
+    .log__cnpj{min-width:110px}
+    .grid{grid-template-columns:1fr}
+    .cell:nth-child(odd){border-right:0}
+  }
+  @media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+
+<header class="topbar">
+  <div class="wrap">
+    <span class="mark">ARI</span>
+    <h1>Consulta Simples Nacional
+      <small>Transportes ARI · verificação de enquadramento por CNPJ</small>
+    </h1>
+  </div>
+</header>
+
+<main class="wrap">
+  <section class="card">
+    <div class="tabs">
+      <button class="tab is-active" data-tab="avulso">CNPJ avulso</button>
+      <button class="tab" data-tab="lote">Planilha em lote</button>
+    </div>
+
+    <!-- ============ ABA: CNPJ AVULSO ============ -->
+    <div class="pane pane--avulso is-active" id="pane-avulso">
+      <div class="card__head">
+        <h2>Consulta avulsa</h2>
+        <p>Digite um CNPJ e veja na hora os dados da empresa e o enquadramento no Simples Nacional.</p>
+      </div>
+      <div class="search">
+        <input id="cnpjInput" inputmode="numeric" autocomplete="off"
+               placeholder="00.000.000/0000-00" maxlength="18">
+        <button class="btn btn--go" id="cnpjBtn">🔎 Consultar</button>
+      </div>
+      <div class="search-hint">Pode colar com pontuação ou só os números.</div>
+      <div class="alert alert--err" id="alertA"></div>
+      <div class="result" id="result"></div>
+    </div>
+
+    <!-- ============ ABA: PLANILHA EM LOTE ============ -->
+    <div class="pane pane--lote" id="pane-lote">
+      <div class="card__head">
+        <h2>Planilha de entrada</h2>
+        <p>Envie um arquivo <b>.xls</b> ou <b>.xlsx</b> com uma coluna chamada <b>CNPJ</b>. O resultado sai numa planilha idêntica com a coluna <b>Status Simples Nacional</b> acrescentada.</p>
+      </div>
+
+      <label class="drop" id="drop">
+        <div class="drop__icon">↑ ARQUIVO</div>
+        <div class="drop__main">Arraste a planilha aqui ou clique para escolher</div>
+        <div class="drop__sub">.xls / .xlsx · a coluna precisa se chamar CNPJ</div>
+        <div class="drop__file" id="fileName"></div>
+        <input type="file" id="file" accept=".xls,.xlsx">
+      </label>
+
+      <div class="alert alert--err" id="alert"></div>
+
+      <div class="actions">
+        <button class="btn btn--go" id="run" disabled>▶ Consultar</button>
+        <a class="btn btn--dl" id="download" style="display:none">↓ Baixar resultado</a>
+        <span class="hint" id="hint"></span>
+      </div>
+
+      <div class="progress" id="progress">
+        <div class="progress__bar"><div class="progress__fill" id="fill"></div></div>
+        <div class="progress__meta"><span id="pcount">0 / 0</span><span id="ppct">0%</span></div>
+      </div>
+
+      <div class="log" id="log"></div>
+    </div>
+  </section>
+
+  <p class="foot">
+    Roda inteiramente no seu navegador — nenhum dado sai para servidor da ARI.<br>
+    Fontes consultadas, em ordem: <code>BrasilAPI</code> → <code>MinhaReceita</code> → <code>ReceitaWS</code>.
+  </p>
+</main>
+
+<script>
+(function(){
+  "use strict";
+
+  /* ---------- utilidades ---------- */
+  function onlyDigits(v){ return String(v==null?'':v).replace(/\D/g,''); }
+  function sleep(ms){ return new Promise(function(r){ setTimeout(r,ms); }); }
+  function fmtCNPJ(d){
+    d = onlyDigits(d).padStart(14,'0').slice(0,14);
+    return d.replace(/^(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})$/,'$1.$2.$3/$4-$5');
+  }
+  function esc(s){ return String(s==null?'':s).replace(/[&<>"]/g,function(c){
+    return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]; }); }
+  function fmtDate(s){
+    if(!s) return s;
+    var m = String(s).match(/^(\d{4})-(\d{2})-(\d{2})/); // ISO -> BR
+    return m ? (m[3]+'/'+m[2]+'/'+m[1]) : s;
+  }
+
+  /* determina o status do Simples a partir de campos possíveis */
+  function statusSimples(simples, mei){
+    if(simples === true)  return mei ? 'Optante pelo Simples Nacional (MEI)' : 'Optante pelo Simples Nacional';
+    if(simples === false) return 'Não Optante pelo Simples Nacional';
+    return null; // desconhecido
+  }
+  function statusKind(txt){
+    if(!txt) return 'nao';
+    if(txt.indexOf('(MEI)')!==-1) return 'mei';
+    if(txt.indexOf('Não Optante')===0) return 'nao';
+    if(txt.indexOf('Optante')===0) return 'sim';
+    if(txt==='CNPJ Inválido') return 'err';
+    return 'nao';
+  }
+
+  /* ==================================================================
+     CONSULTA AVULSA — retorna dados completos da empresa
+     ================================================================== */
+  async function consultarInfo(cnpjLimpo){
+    // 1) BrasilAPI (dados mais completos)
+    try{
+      var r = await fetch('https://brasilapi.com.br/api/cnpj/v1/'+cnpjLimpo);
+      if(r.ok){
+        var d = await r.json();
+        var mei = (d.opcao_pelo_simei != null) ? d.opcao_pelo_simei : d.opcao_pelo_mei;
+        return {ok:true, fonte:'BrasilAPI', data:{
+          razao: d.razao_social,
+          fantasia: d.nome_fantasia,
+          situacao: d.descricao_situacao_cadastral,
+          abertura: d.data_inicio_atividade,
+          cnae: d.cnae_fiscal_descricao,
+          porte: d.descricao_porte || d.porte,
+          natureza: d.natureza_juridica,
+          municipio: d.municipio, uf: d.uf,
+          status: statusSimples(d.opcao_pelo_simples, mei)
+        }};
+      }
+      if(r.status===404) return {ok:false, motivo:'CNPJ não encontrado na base da Receita.'};
+    }catch(e){}
+
+    // 2) MinhaReceita
+    try{
+      var r2 = await fetch('https://minhareceita.org/'+cnpjLimpo);
+      if(r2.ok){
+        var d2 = await r2.json();
+        var mei2 = (d2.opcao_pelo_simei != null) ? d2.opcao_pelo_simei : d2.opcao_pelo_mei;
+        return {ok:true, fonte:'MinhaReceita', data:{
+          razao: d2.razao_social,
+          fantasia: d2.nome_fantasia,
+          situacao: d2.descricao_situacao_cadastral,
+          abertura: d2.data_inicio_atividade,
+          cnae: d2.cnae_fiscal_descricao,
+          porte: d2.descricao_porte || d2.porte,
+          natureza: d2.natureza_juridica,
+          municipio: d2.municipio, uf: d2.uf,
+          status: statusSimples(d2.opcao_pelo_simples, mei2)
+        }};
+      }
+    }catch(e){}
+
+    // 3) ReceitaWS (estrutura diferente; limite de 3/min)
+    try{
+      var r3 = await fetch('https://receitaws.com.br/v1/cnpj/'+cnpjLimpo);
+      if(r3.ok){
+        var d3 = await r3.json();
+        if(d3.status !== 'ERROR'){
+          var opt = d3.simples && d3.simples.optante;
+          var optMei = d3.simei && d3.simei.optante;
+          var st = (opt===true)?(optMei?'Optante pelo Simples Nacional (MEI)':'Optante pelo Simples Nacional')
+                 :(opt===false)?'Não Optante pelo Simples Nacional':null;
+          return {ok:true, fonte:'ReceitaWS', data:{
+            razao: d3.nome, fantasia: d3.fantasia, situacao: d3.situacao,
+            abertura: d3.abertura,
+            cnae: (d3.atividade_principal && d3.atividade_principal[0]) ? d3.atividade_principal[0].text : null,
+            porte: d3.porte, natureza: d3.natureza_juridica,
+            municipio: d3.municipio, uf: d3.uf, status: st
+          }};
+        }
+      }
+    }catch(e){}
+
+    return {ok:false, motivo:'Não consegui consultar agora. Tente novamente em instantes.'};
+  }
+
+  function renderResultado(cnpjLimpo, res){
+    var box = document.getElementById('result');
+    if(!res.ok){
+      box.classList.add('on');
+      box.innerHTML = '<div class="rcard"><div class="rcard__top">'
+        + '<div class="rcard__razao">'+esc(fmtCNPJ(cnpjLimpo))+'</div>'
+        + '<div class="status status--err"><span class="dot"></span>'+esc(res.motivo)+'</div>'
+        + '</div></div>';
+      return;
+    }
+    var d = res.data;
+    var stTxt = d.status || 'Situação do Simples não informada';
+    var kind = d.status ? statusKind(d.status) : 'nao';
+    function cell(k,v,full){
+      return '<div class="cell'+(full?' cell--full':'')+'"><div class="cell__k">'+k+'</div>'
+           + '<div class="cell__v">'+esc(v||'—')+'</div></div>';
+    }
+    var local = [d.municipio, d.uf].filter(Boolean).join(' / ');
+    box.classList.add('on');
+    box.innerHTML =
+      '<div class="rcard">'
+      + '<div class="rcard__top">'
+      +   '<div class="rcard__razao">'+esc(d.razao||'—')+'</div>'
+      +   '<div class="rcard__cnpj">'+esc(fmtCNPJ(cnpjLimpo))+(d.fantasia?' · '+esc(d.fantasia):'')+'</div>'
+      +   '<div class="status status--'+kind+'"><span class="dot"></span>'+esc(stTxt)+'</div>'
+      + '</div>'
+      + '<div class="grid">'
+      +   cell('Situação cadastral', d.situacao)
+      +   cell('Abertura', fmtDate(d.abertura))
+      +   cell('Porte', d.porte)
+      +   cell('Município / UF', local)
+      +   cell('Natureza jurídica', d.natureza, true)
+      +   cell('Atividade principal (CNAE)', d.cnae, true)
+      + '</div>'
+      + '<div class="rfonte">fonte: '+esc(res.fonte)+'</div>'
+      + '</div>';
+  }
+
+  async function buscarAvulso(){
+    var input = document.getElementById('cnpjInput');
+    var btn = document.getElementById('cnpjBtn');
+    var alertA = document.getElementById('alertA');
+    var box = document.getElementById('result');
+    var limpo = onlyDigits(input.value);
+
+    alertA.classList.remove('on');
+    if(limpo.length !== 14){
+      alertA.textContent = 'Digite um CNPJ com 14 dígitos.';
+      alertA.classList.add('on');
+      box.classList.remove('on');
+      return;
+    }
+
+    btn.disabled = true;
+    var original = btn.innerHTML;
+    btn.innerHTML = '<span class="spinner"></span> Consultando';
+    box.classList.remove('on');
+
+    var res = await consultarInfo(limpo);
+    renderResultado(limpo, res);
+
+    btn.disabled = false;
+    btn.innerHTML = original;
+  }
+
+  /* máscara leve enquanto digita */
+  document.getElementById('cnpjInput').addEventListener('input', function(e){
+    var d = onlyDigits(e.target.value).slice(0,14);
+    var out = d;
+    if(d.length>2)  out = d.slice(0,2)+'.'+d.slice(2);
+    if(d.length>5)  out = out.slice(0,6)+'.'+d.slice(5);
+    if(d.length>8)  out = out.slice(0,10)+'/'+d.slice(8);
+    if(d.length>12) out = out.slice(0,15)+'-'+d.slice(12);
+    e.target.value = out;
+  });
+  document.getElementById('cnpjInput').addEventListener('keydown', function(e){
+    if(e.key==='Enter'){ e.preventDefault(); buscarAvulso(); }
+  });
+  document.getElementById('cnpjBtn').addEventListener('click', buscarAvulso);
+
+  /* ---------- abas ---------- */
+  var tabs = document.querySelectorAll('.tab');
+  tabs.forEach(function(t){
+    t.addEventListener('click', function(){
+      tabs.forEach(function(x){ x.classList.remove('is-active'); });
+      t.classList.add('is-active');
+      document.getElementById('pane-avulso').classList.toggle('is-active', t.dataset.tab==='avulso');
+      document.getElementById('pane-lote').classList.toggle('is-active', t.dataset.tab==='lote');
+    });
+  });
+
+  /* ==================================================================
+     PLANILHA EM LOTE
+     ================================================================== */
+  var fileInput=document.getElementById('file'), drop=document.getElementById('drop'),
+      fileName=document.getElementById('fileName'), runBtn=document.getElementById('run'),
+      dlBtn=document.getElementById('download'), hint=document.getElementById('hint'),
+      alertBox=document.getElementById('alert'), progress=document.getElementById('progress'),
+      fill=document.getElementById('fill'), pcount=document.getElementById('pcount'),
+      ppct=document.getElementById('ppct'), logBox=document.getElementById('log');
+
+  var workbook=null, rows=null, headers=null, cnpjKey=null, running=false;
+
+  function showError(m){ alertBox.textContent=m; alertBox.classList.add('on'); }
+  function clearError(){ alertBox.classList.remove('on'); alertBox.textContent=''; }
+  function disableRun(){ runBtn.disabled=true; drop.classList.remove('has-file'); }
+
+  function handleFile(f){
+    clearError(); dlBtn.style.display='none';
+    logBox.classList.remove('on'); logBox.innerHTML=''; progress.classList.remove('on');
+    var reader=new FileReader();
+    reader.onload=function(e){
+      try{
+        workbook=XLSX.read(new Uint8Array(e.target.result),{type:'array'});
+        var sheet=workbook.Sheets[workbook.SheetNames[0]];
+        rows=XLSX.utils.sheet_to_json(sheet,{defval:''});
+        if(!rows.length){ showError('A planilha está vazia.'); disableRun(); return; }
+        headers=Object.keys(rows[0]);
+        cnpjKey=headers.find(function(h){ return h.trim().toUpperCase()==='CNPJ'; })||null;
+        if(!cnpjKey){ showError('Coluna "CNPJ" não encontrada. Colunas: '+headers.join(', ')); disableRun(); return; }
+        fileName.textContent=f.name+'  ·  '+rows.length+' linha(s)';
+        drop.classList.add('has-file'); runBtn.disabled=false;
+        hint.textContent='Pronto para consultar '+rows.length+' linha(s).';
+      }catch(err){ showError('Não consegui abrir a planilha: '+err.message); disableRun(); }
+    };
+    reader.onerror=function(){ showError('Falha ao ler o arquivo.'); disableRun(); };
+    reader.readAsArrayBuffer(f);
+  }
+
+  /* consulta só o status (3 tentativas), igual ao script Python */
+  async function consultarStatus(cnpjLimpo){
+    if(cnpjLimpo.length!==14) return 'CNPJ Inválido';
+    try{ var r=await fetch('https://brasilapi.com.br/api/cnpj/v1/'+cnpjLimpo);
+      if(r.ok){ var d=await r.json(); var m=(d.opcao_pelo_simei!=null)?d.opcao_pelo_simei:d.opcao_pelo_mei;
+        var s=statusSimples(d.opcao_pelo_simples,m); if(s) return s; } }catch(e){}
+    try{ var r2=await fetch('https://minhareceita.org/'+cnpjLimpo);
+      if(r2.ok){ var d2=await r2.json(); var m2=(d2.opcao_pelo_simei!=null)?d2.opcao_pelo_simei:d2.opcao_pelo_mei;
+        var s2=statusSimples(d2.opcao_pelo_simples,m2); if(s2) return s2; } }catch(e){}
+    try{ var r3=await fetch('https://receitaws.com.br/v1/cnpj/'+cnpjLimpo);
+      if(r3.ok){ var d3=await r3.json(); var opt=d3.simples&&d3.simples.optante;
+        if(opt===true) return 'Optante pelo Simples Nacional';
+        if(opt===false) return 'Não Optante pelo Simples Nacional'; } }catch(e){}
+    return 'Não Optante pelo Simples Nacional';
+  }
+
+  function logLine(i,total,cnpj,status,fromCache){
+    var row=document.createElement('div');
+    row.className='log__row'+(fromCache?' cache':'');
+    var pc=status?('pill--'+statusKind(status)):'pill--wait';
+    var txt=status?(status+(fromCache?' · cache':'')):'consultando…';
+    row.innerHTML='<span class="log__n">['+i+'/'+total+']</span>'
+      +'<span class="log__cnpj">'+esc(cnpj)+'</span>'
+      +'<span class="log__pill '+pc+'">'+esc(txt)+'</span>';
+    logBox.appendChild(row); logBox.scrollTop=logBox.scrollHeight; return row;
+  }
+  function setProgress(done,total){
+    var pct=total?Math.round(done/total*100):0;
+    fill.style.width=pct+'%'; pcount.textContent=done+' / '+total; ppct.textContent=pct+'%';
+  }
+
+  async function run(){
+    if(running||!rows) return;
+    running=true; runBtn.disabled=true; dlBtn.style.display='none'; clearError();
+    logBox.innerHTML=''; logBox.classList.add('on'); progress.classList.add('on');
+    hint.textContent='Consultando na internet…';
+    var total=rows.length, cache={}; setProgress(0,total);
+    for(var i=0;i<total;i++){
+      var raw=rows[i][cnpjKey], limpo=onlyDigits(raw);
+      var display=String(raw===''?'(vazio)':raw), status, fromCache=false;
+      if(Object.prototype.hasOwnProperty.call(cache,limpo)){
+        status=cache[limpo]; fromCache=true; logLine(i+1,total,display,status,true);
+      }else{
+        var pending=logLine(i+1,total,display,null,false);
+        status=await consultarStatus(limpo); cache[limpo]=status;
+        var pill=pending.querySelector('.log__pill');
+        pill.className='log__pill pill--'+statusKind(status); pill.textContent=status;
+        await sleep(1200);
+      }
+      rows[i]['Status Simples Nacional']=status; setProgress(i+1,total);
+    }
+    buildOutput();
+    hint.textContent='Concluído — '+total+' linha(s) processada(s).';
+    runBtn.disabled=false; running=false;
+  }
+
+  function buildOutput(){
+    var outHeaders=headers.slice();
+    if(outHeaders.indexOf('Status Simples Nacional')===-1) outHeaders.push('Status Simples Nacional');
+    var ws=XLSX.utils.json_to_sheet(rows,{header:outHeaders});
+    var wb=XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb,ws,'Resultado');
+    var wbout=XLSX.write(wb,{bookType:'xlsx',type:'array'});
+    var blob=new Blob([wbout],{type:'application/octet-stream'}), url=URL.createObjectURL(blob);
+    dlBtn.href=url; dlBtn.setAttribute('download','RESULTADO_cnpjs.xlsx'); dlBtn.style.display='inline-flex';
+  }
+
+  fileInput.addEventListener('change',function(){ if(fileInput.files[0]) handleFile(fileInput.files[0]); });
+  runBtn.addEventListener('click',run);
+  ['dragenter','dragover'].forEach(function(ev){ drop.addEventListener(ev,function(e){ e.preventDefault(); drop.classList.add('is-over'); }); });
+  ['dragleave','drop'].forEach(function(ev){ drop.addEventListener(ev,function(e){ e.preventDefault(); drop.classList.remove('is-over'); }); });
+  drop.addEventListener('drop',function(e){ var f=e.dataTransfer.files&&e.dataTransfer.files[0]; if(f) handleFile(f); });
+})();
+</script>
+</body>
+</html>
